@@ -455,6 +455,7 @@ class ImageReconstructModel(Module):
 		return proPs
 	def forward(self,imgs,gtypes=None,cam_k=None,input_imgbatch=None,**kwargs):
 		shapes,poses,trans,garlatents,_=self.imgEncoder(imgs)
+		print(trans.size())
 		if 'garl' in kwargs:
 			garlatents=kwargs['garl']
 		self.shapes=shapes
@@ -536,7 +537,7 @@ class ImageReconstructModel(Module):
 		gps_diss=gps_pca+displacements
 
 		tmps=torch.cat((gps_diss,gps_diss.new_ones(gps_diss.shape[0],1)),dim=-1).unsqueeze(-1)
-		gps_rec=torch.matmul(transforms,tmps).squeeze(-1)[:,:3]		
+		gps_rec=torch.matmul(transforms,tmps).squeeze(-1)[:,:3]
 		gps_rec=gps_rec+trans[imgbatch,:]
 		Js_transformed=Js_transformed+trans.unsqueeze(1)
 		body_ps,_,_=self.smpl(shapes,pose_Rs,True,False)

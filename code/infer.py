@@ -7,14 +7,42 @@ import torch
 import pickle
 from module.SkinWeightModel import SkinWeightNet
 import module.ImageReconstructModel as M
-import os
 from glob import glob
 import argparse
 import cv2
+
+def save_batch_pickles(bps, names):
+	width = 1080
+	height = 1080
+	camera_c = [540.0, 540.0]
+	camera_f = [1080, 1080]
+	num = 1
+
+	for bp, name in zip(bps, names):
+		# bp = bp - [0, 0, 9.7] # hyperparameters for model 1
+		# bp = bp - [0, 0.05, 10.35] # hyperparameters for model 4
+		# bp = bp * [1, -1, -1] + [0., 0.2, -2.3] + [0., 0., 0] #[0., 0., 0.4]
+		# bp = bp * [1, -1, -1] + [0, 0.25, -1.95]
+		# bp = bp * [1, -1, -1] + [0, -0.21, -1.95]
+
+		vertices = bp[None,:].repeat(num, axis=0)
+		data_to_save = {'width': width, 'camera_c': camera_c, 'vertices': vertices,
+						'camera_f': camera_f, 'height': height}
+		pickle_out = open('{}'.format(name), "wb")
+		pickle.dump(data_to_save, pickle_out)
+		pickle_out.close()
+
 def save_obj(ps,tris,name):
 	with open(name, 'w') as fp:
 		for v in ps:
-			fp.write( 'v {:f} {:f} {:f}\n'.format( v[0], v[1], v[2]) )
+			#fp.write( 'v {:f} {:f} {:f}\n'.format( v[0], -(v[1]), -(v[2]-9.7)))
+			#fp.write('v {:f} {:f} {:f}\n'.format(v[0], -(v[1] - 0.05), -(v[2] - 10.35)))
+			#fp.write('v {:f} {:f} {:f}\n'.format(v[0], -v[1] + 0.2, -v[2] - 2.3 + 0.4))
+			#fp.write('v {:f} {:f} {:f}\n'.format(v[0], -v[1] + 0.2, -v[2] - 2.3 + 0))
+			#fp.write('v {:f} {:f} {:f}\n'.format(v[0], -v[1] + 0.25, -v[2] - 1.95))
+			#fp.write('v {:f} {:f} {:f}\n'.format(v[0], -v[1] - 0.21, -v[2] - 1.95))
+			fp.write('v {:f} {:f} {:f}\n'.format(v[0], -v[1], -v[2]))
+			#fp.write('v {:f} {:f} {:f}\n'.format(v[0], v[1], v[2]))
 		if tris is not None:
 			for f in tris: # Faces are 1-based, not 0-based in obj files
 				fp.write( 'f {:d} {:d} {:d}\n'.format(f[0] + 1, f[1] + 1, f[2] + 1) )
@@ -141,13 +169,18 @@ with torch.no_grad():
 		garbatch=net.garbatch.cpu().numpy()
 		names=[]
 		names_body=[]
+		names_pickle=[]
 		for ind,file in enumerate(batch_files):
 			basename=osp.splitext(osp.basename(file))[0]
-			names.append(osp.join(save_root,basename+'_up.obj'))
-			names.append(osp.join(save_root,basename+'_bottom.obj'))
-			names_body.append(osp.join(save_root,basename+'_smpl.obj'))
+			os.makedirs(osp.join(save_root,basename), exist_ok=True)
+			names.append(osp.join(save_root,basename, f'{basename}_up.obj'))
+			names.append(osp.join(save_root,basename, f'{basename}_bottom.obj'))
+			names_body.append(osp.join(save_root,basename, f'{basename}.obj'))
+			names_pickle.append(osp.join(save_root, basename, 'frame_data.pkl'))
 
 		save_batch_objs(gps_rec.cpu().numpy(),face_index,garbatch,names)
-		save_batch_objs(body_ps.cpu().numpy(),net.smpl.faces,None,names_body)
+		save_batch_objs(body_ps.cpu().numpy(),net.smpl.faces,None,names_body) #body_ps -> [B, 6890, 3] net.smpl.faces -> 13776,3
+		save_batch_pickles(body_ps.cpu().numpy(), names_pickle)
+
 		print(batch_id)
 print('done.')
