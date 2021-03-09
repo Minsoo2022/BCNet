@@ -538,10 +538,10 @@ class ImageReconstructModel(Module):
 
 		tmps=torch.cat((gps_diss,gps_diss.new_ones(gps_diss.shape[0],1)),dim=-1).unsqueeze(-1)
 		gps_rec=torch.matmul(transforms,tmps).squeeze(-1)[:,:3]
-		gps_rec=gps_rec+trans[imgbatch,:]
-		Js_transformed=Js_transformed+trans.unsqueeze(1)
+		#gps_rec=gps_rec+trans[imgbatch,:]
+		#Js_transformed=Js_transformed+trans.unsqueeze(1)
 		body_ps,_,_=self.smpl(shapes,pose_Rs,True,False)
-		body_ps=body_ps+trans.unsqueeze(1)
+		#body_ps=body_ps+trans.unsqueeze(1)
 
 		if self.gar_classification:
 			return gps_pca,gps_diss,gps_rec,ws,shapes,poses,trans,pcas_perg,displacements,Js_transformed,body_ns,body_ps,up_gar_prob,bottom_gar_prob
