@@ -41,7 +41,7 @@ def save_obj(ps,tris,name, with_uv, trans):
 				mtl_info = m_info.readlines()
 			with open(name.replace('.obj', '.mtl'), 'w') as fm:
 				fm.write(''.join(mtl_info))
-				fm.write('map_Kd %s.jpg' % (base_name))
+				fm.write('map_Kd %s_octopus.jpg' % (base_name))
 			fp.write('mtlib %s.mtl\n' % (base_name))
 		for v in ps:
 			fp.write('v {:f} {:f} {:f}\n'.format(v[0] + trans[0], -v[1] + trans[1], -v[2] + trans[2]))
@@ -131,8 +131,8 @@ inputs=osp.join(args.inputs, 'frames')
 img_files=[]
 img_gtypes=[]
 if osp.isdir(inputs):
-	img_files.extend(glob(osp.join(inputs,'*.jpg')))
-	img_files.extend(glob(osp.join(inputs,'*.png')))
+	img_files.extend(glob(osp.join(inputs,'*_0.jpg')))
+	img_files.extend(glob(osp.join(inputs,'*_0.png')))
 	for imf in img_files:
 		temp=imf[:-4]+'_gtypes.txt'
 		if osp.isfile(temp):
@@ -200,7 +200,7 @@ with torch.no_grad():
 			for file in batch_files:
 				seg_info.append(read_seg(file.replace('frames', 'segmentations').replace('jpg','png')))
 		imgs=torch.from_numpy(np.stack(imgs,axis=0)).to(device)
-		gps_pca,gps_diss,gps_rec,ws,shape_rec,pose_rec,tran_rec,pca_perg,displacement,body_js,body_ns,body_ps,_,_=\
+		gps_pca,gps_diss,gps_rec,ws,shape_rec,pose_rec,tran_rec,pca_perg,displacement,body_js,body_ns,body_ps,_,_, pose_Rs=\
 			net(imgs,gtypes=img_gtypes[s_id:e_id])
 		if args.trans == 'linear':
 			obj_info = []
@@ -221,13 +221,6 @@ with torch.no_grad():
 			names_body.append(osp.join(save_root, f'{basename}.obj'))
 			names_pickle.append(osp.join(save_root, 'frame_data.pkl'))
 
-		# trans = \
-		# 	[[0.00679438, 0.25775233, -1.9136602],
-		# 	 [0.04599036, 0.25826713, -1.9104478],
-		# 	 [0.02466849, 0.28423995, -1.9669092],
-		# 	 [0.02272238, 0.23069401, -1.9293673],
-		# 	 [0.00169159, 0.24038570, -1.9433510],
-		# 	 [0.02097526, 0.22199118, -1.9970067]]
 		if args.trans == 'base':
 			trans = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
 		elif args.trans == 'octopus':
@@ -247,5 +240,12 @@ with torch.no_grad():
 		save_batch_objs(body_ps.cpu().numpy(),net.smpl.faces,None,names_body, with_uv=True, trans=trans)
 		save_batch_pickles(body_ps.cpu().numpy(), names_pickle, trans=trans)
 
+
+		SMPL_parameter = {'shape': shape_rec.cpu().numpy(), 'pose': pose_Rs.cpu().numpy()}
+		pickle_out = open('{}'.format(os.path.join(save_root, 'SMPL_parameter.pkl')), "wb")
+		pickle.dump(SMPL_parameter, pickle_out)
+		pickle_out.close()
 		print(batch_id)
+
+
 print('done.')

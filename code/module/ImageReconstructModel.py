@@ -544,6 +544,6 @@ class ImageReconstructModel(Module):
 		#body_ps=body_ps+trans.unsqueeze(1)
 
 		if self.gar_classification:
-			return gps_pca,gps_diss,gps_rec,ws,shapes,poses,trans,pcas_perg,displacements,Js_transformed,body_ns,body_ps,up_gar_prob,bottom_gar_prob
+			return gps_pca,gps_diss,gps_rec,ws,shapes,poses,trans,pcas_perg,displacements,Js_transformed,body_ns,body_ps,up_gar_prob,bottom_gar_prob, pose_Rs
 		else:
 			return gps_pca,gps_diss,gps_rec,ws,shapes,poses,trans,pcas_perg,displacements,Js_transformed,body_ns,body_ps
